@@ -1,0 +1,14 @@
+{
+  "name": "BIP110 Countdown",
+  "short_name": "BIP110",
+  "description": "Countdown to Bitcoin BIP-110 activation",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#00ff00",
+  "icons": [
+    { "src": "https://via.placeholder.com/192x192/000/0f0?text=BIP", "sizes": "192x192", "type": "image/png" },
+    { "src": "https://via.placeholder.com/512x512/000/0f0?text=BIP", "sizes": "512x512", "type": "image/png" }
+  ]
+}
+
