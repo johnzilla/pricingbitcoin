@@ -3,64 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BIP110 Countdown</title>
-    <meta name="description" content="Countdown to BIP110 mandatory signaling block">
+    <title>BIP-110 Countdown | Pricing Bitcoin</title>
+    <meta name="description" content="Live countdown to BIP-110 activation. Bitcoin is money.">
+    <meta property="og:title" content="BIP-110 Countdown">
+    <meta property="og:description" content="Blocks until Bitcoin stays money. Live on pricingbitcoin.com">
+    <meta property="og:image" content="https://pricingbitcoin.com/og-image.png"> <!-- optional -->
     <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ctext y='20' font-size='20'%3E%E2%82%BF%3C/text%3E%3C/svg%3E">
     <style>
-        body {
-            font-family: 'Courier New', monospace;
-            background: #000;
-            color: #0f0;
-            text-align: center;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            overflow: hidden;
-            position: relative;
-        }
+        body { font-family: 'Courier New', monospace; background: #000; color: #0f0; text-align: center; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; overflow: hidden; position: relative; }
         canvas#matrix { position: absolute; top: 0; left: 0; z-index: -1; opacity: 0.15; }
-        .container { max-width: 600px; z-index: 1; }
-        h1 { color: #ff0; text-shadow: 0 0 10px #ff0; }
-        .countdown { font-size: 3.5rem; margin: 20px 0; text-shadow: 0 0 20px #0f0; }
-        .info { margin: 15px 0; font-size: 1.2rem; }
-        .quote { font-style: italic; margin: 20px 0; min-height: 60px; color: #aaa; }
-        button {
-            background: #0f0; color: #000; border: none; padding: 12px 20px;
-            font-size: 1rem; cursor: pointer; margin: 8px; border-radius: 4px;
-        }
-        button:hover { background: #ff0; }
+        .container { max-width: 620px; z-index: 1; }
+        h1 { color: #ff0; text-shadow: 0 0 10px #ff0; margin-bottom: 5px; }
+        .price { font-size: 1.8rem; margin: 10px 0; color: #0f0; }
+        .countdown { font-size: 3.2rem; margin: 15px 0; text-shadow: 0 0 20px #0f0; }
+        .info { margin: 12px 0; font-size: 1.15rem; }
+        .quote { font-style: italic; margin: 25px 0 15px; min-height: 70px; color: #aaa; font-size: 1.05rem; }
+        button, select { background: #0f0; color: #000; border: none; padding: 12px 20px; font-size: 1rem; cursor: pointer; margin: 8px; border-radius: 4px; }
+        button:hover, select:hover { background: #ff0; }
+        footer { margin-top: 40px; font-size: 0.9rem; color: #555; }
     </style>
 </head>
 <body>
     <canvas id="matrix"></canvas>
     <div class="container">
         <h1>🚀 BIP-110 ACTIVATION COUNTDOWN</h1>
-        <div class="bitcoin">Current Block</div>
+        <div class="price">₿ <span id="btc-price">Loading...</span> <select id="currency" onchange="fetchPrice()">
+            <option value="USD">USD</option>
+            <option value="EUR">EUR</option>
+            <option value="GBP">GBP</option>
+            <option value="JPY">JPY</option>
+            <option value="CAD">CAD</option>
+            <option value="AUD">AUD</option>
+        </select></div>
+
+        <div class="bitcoin">Current Block Height</div>
         <div id="current-block" class="countdown">Loading...</div>
         
-        <div class="info">Mandatory Signaling @ Block</div>
-        <div id="target-block" class="countdown">961,632</div>
-        
+        <div class="info">Mandatory Signaling Starts @ Block 961,632</div>
         <div id="blocks-left" class="countdown">--- blocks left</div>
         <div id="time-left" class="countdown">---</div>
         
-        <div class="info">Signaling This Period: <strong id="signaling">0%</strong></div>
+        <div class="info">Current Signaling: <strong id="signaling">0%</strong></div>
         
         <div class="quote" id="satoshi-quote">"Loading wisdom..."</div>
         
-        <button onclick="refreshData()">Refresh Data</button>
+        <button onclick="refreshData()">Refresh</button>
         <button onclick="shareCountdown()">Share on X</button>
         <button onclick="installPWA()">Install PWA</button>
+
+        <footer>
+            Bitcoin is Money • <a href="https://pricingbitcoin.com" style="color:#0f0">pricingbitcoin.com</a>
+        </footer>
     </div>
 
     <script>
         let currentHeight = 956117;
         const targetHeight = 961632;
-        const quotes = [
+        const quotes = [ /* same as before */ 
             "The root problem with conventional currency is all the trust that's required to make it work.",
             "We have to find a way to make the network work without trusting anyone.",
             "If you don't believe me or don't get it, I don't have time to try to convince you.",
@@ -69,58 +69,64 @@
             "The Times 03/Jan/2009 Chancellor on brink of second bailout for banks."
         ];
 
-        // Matrix Rain
+        // Matrix Rain (unchanged)
         const canvas = document.getElementById('matrix');
         const ctx = canvas.getContext('2d');
-        canvas.height = window.innerHeight;
-        canvas.width = window.innerWidth;
+        let fontSize = 14;
+        function resizeCanvas() { canvas.height = window.innerHeight; canvas.width = window.innerWidth; }
+        resizeCanvas();
         const chars = "01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワン";
-        const fontSize = 14;
-        const columns = canvas.width / fontSize;
-        const drops = Array(Math.floor(columns)).fill(1);
+        let drops = Array(Math.floor(canvas.width / fontSize)).fill(1);
 
         function drawMatrix() {
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            ctx.fillStyle = 'rgba(0,0,0,0.05)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = '#0f0';
             ctx.font = `${fontSize}px monospace`;
             for (let i = 0; i < drops.length; i++) {
-                const text = chars[Math.floor(Math.random() * chars.length)];
-                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
-                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+                const text = chars[Math.floor(Math.random()*chars.length)];
+                ctx.fillText(text, i*fontSize, drops[i]*fontSize);
+                if (drops[i]*fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
                 drops[i]++;
             }
         }
         setInterval(drawMatrix, 35);
+        window.addEventListener('resize', resizeCanvas);
+
+        async function fetchPrice(currency = 'USD') {
+            try {
+                const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=${currency.toLowerCase()}`);
+                const data = await res.json();
+                document.getElementById('btc-price').textContent = data.bitcoin[currency.toLowerCase()].toLocaleString();
+            } catch(e) {
+                document.getElementById('btc-price').textContent = 'N/A';
+            }
+        }
 
         async function fetchData() {
-            // Block height
+            // Block + Signaling (same as before)
             try {
                 const res = await fetch('https://blockchain.info/q/getblockcount');
                 if (res.ok) currentHeight = parseInt(await res.text());
-            } catch (e) {}
+            } catch(e){}
 
-            // Signaling %
             try {
                 const sigRes = await fetch('https://bip110.org/monitor');
                 if (sigRes.ok) {
                     const text = await sigRes.text();
-                    const match = text.match(/Signal rate.*?(\d+\.?\d*)%/i) || text.match(/(\d+\.?\d*)%/);
+                    const match = text.match(/(\d+\.?\d*)%/);
                     if (match) document.getElementById('signaling').textContent = match[1] + '%';
                 }
-            } catch (e) {
-                document.getElementById('signaling').textContent = '~0.5%';
-            }
+            } catch(e){ document.getElementById('signaling').textContent = '~0.5%'; }
 
             updateDisplay();
             rotateQuote();
         }
 
-        function updateDisplay() {
+        function updateDisplay() { /* same logic as before */ 
             const blocksLeft = Math.max(0, targetHeight - currentHeight);
             document.getElementById('current-block').textContent = currentHeight.toLocaleString();
             document.getElementById('blocks-left').textContent = `${blocksLeft.toLocaleString()} blocks left`;
-            
             const minutesLeft = blocksLeft * 10;
             const days = Math.floor(minutesLeft / 1440);
             const hours = Math.floor((minutesLeft % 1440) / 60);
@@ -129,30 +135,24 @@
         }
 
         function rotateQuote() {
-            const qEl = document.getElementById('satoshi-quote');
-            qEl.textContent = `"${quotes[Math.floor(Math.random() * quotes.length)]}"`;
+            document.getElementById('satoshi-quote').textContent = `"${quotes[Math.floor(Math.random() * quotes.length)]}"`;
         }
 
-        function refreshData() { fetchData(); }
-
-        function shareCountdown() {
+        function refreshData() { fetchData(); fetchPrice(document.getElementById('currency').value); }
+        function shareCountdown() { /* same as before */ 
             const blocksLeft = Math.max(0, targetHeight - currentHeight);
-            const text = `🚀 ${blocksLeft} blocks until BIP-110 mandatory signaling! Bitcoin stays money. ${window.location.href}`;
+            const text = `🚀 ${blocksLeft} blocks until BIP-110! Bitcoin stays money. https://pricingbitcoin.com`;
             window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
         }
+        function installPWA() { alert('Add to Home Screen from your browser menu for PWA mode!'); }
 
-        function installPWA() {
-            alert('Tap the browser menu → "Add to Home screen" for full PWA/widget mode!');
-        }
-
-        // Auto updates
-        setInterval(fetchData, 180000); // 3 minutes
+        // Init
         window.onload = () => {
             fetchData();
+            fetchPrice();
+            setInterval(() => { fetchData(); fetchPrice(document.getElementById('currency').value); }, 180000);
             setInterval(() => { if (Math.random() > 0.6) currentHeight++; updateDisplay(); }, 45000);
-            window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
         };
     </script>
 </body>
 </html>
-
