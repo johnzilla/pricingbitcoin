@@ -4,32 +4,72 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BIP-110 Countdown | Pricing Bitcoin</title>
-    <meta name="description" content="Live countdown to BIP-110 activation. Bitcoin is money.">
+    <meta name="description" content="Live countdown to BIP-110 mandatory signaling. Real block height and miner signaling, straight from the chain.">
+    <meta name="theme-color" content="#00ff00">
     <meta property="og:title" content="BIP-110 Countdown">
-    <meta property="og:description" content="Blocks until Bitcoin stays money. Live on pricingbitcoin.com">
+    <meta property="og:description" content="Blocks until BIP-110 mandatory signaling. Live on pricingbitcoin.com">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ctext y='20' font-size='20'%3E%E2%82%BF%3C/text%3E%3C/svg%3E">
+    <link rel="apple-touch-icon" href="icon-192.png">
     <style>
-        body { font-family: 'Courier New', monospace; background: #000; color: #0f0; text-align: center; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; overflow: hidden; position: relative; }
-        canvas#matrix { position: absolute; top: 0; left: 0; z-index: -1; opacity: 0.15; }
-        .container { max-width: 620px; z-index: 1; }
-        h1 { color: #ff0; text-shadow: 0 0 10px #ff0; margin: 10px 0 5px; }
-        .price { font-size: 2.2rem; margin: 15px 0 25px; color: #0f0; font-weight: bold; }
-        .countdown { font-size: 3.2rem; margin: 15px 0; text-shadow: 0 0 20px #0f0; }
-        .info { margin: 12px 0; font-size: 1.15rem; }
-        .quote { font-style: italic; margin: 25px 0 15px; min-height: 70px; color: #aaa; font-size: 1.05rem; }
-        button, select { background: #0f0; color: #000; border: none; padding: 12px 20px; font-size: 1rem; cursor: pointer; margin: 8px; border-radius: 4px; }
-        button:hover, select:hover { background: #ff0; }
-        footer { margin-top: 40px; font-size: 0.9rem; color: #555; }
+        :root { --green: #0f0; --yellow: #ff0; --bg: #000; }
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Courier New', monospace;
+            background: var(--bg); color: var(--green);
+            text-align: center; margin: 0; padding: 24px 16px;
+            display: flex; flex-direction: column; align-items: center;
+            justify-content: center; min-height: 100vh;
+            position: relative; overflow-x: hidden;
+        }
+        canvas#matrix { position: fixed; inset: 0; z-index: -1; opacity: 0.15; }
+        .container { max-width: 620px; width: 100%; z-index: 1; }
+        h1 { color: var(--yellow); text-shadow: 0 0 10px var(--yellow); margin: 10px 0 5px; font-size: 1.6rem; }
+        .price { font-size: 2.2rem; margin: 5px 0 25px; color: var(--green); font-weight: bold; }
+        .price select {
+            font-size: 0.95rem; vertical-align: middle;
+        }
+        .label { font-size: 0.8rem; color: #6f6; text-transform: uppercase; letter-spacing: 1px; margin-top: 14px; }
+        .countdown { font-size: 3.2rem; margin: 4px 0; text-shadow: 0 0 20px var(--green); line-height: 1.1; }
+        .countdown.small { font-size: 2rem; }
+        .info { margin: 10px 0; font-size: 1.05rem; }
+        /* signaling progress bar */
+        .sig-wrap { margin: 18px auto; max-width: 420px; }
+        .sig-bar { height: 22px; border: 1px solid var(--green); border-radius: 4px; overflow: hidden; background: #020; position: relative; }
+        .sig-fill { height: 100%; width: 0; background: var(--green); transition: width .6s ease; }
+        .sig-threshold { position: absolute; top: -4px; bottom: -4px; left: 55%; width: 2px; background: var(--yellow); }
+        .sig-legend { font-size: 0.8rem; color: #9c9; margin-top: 6px; }
+        .quote { font-style: italic; margin: 26px auto 12px; min-height: 60px; max-width: 560px; color: #aaa; font-size: 1.05rem; }
+        .btns { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+        button, select {
+            background: var(--green); color: #000; border: none;
+            padding: 12px 18px; font-size: 0.95rem; cursor: pointer;
+            border-radius: 4px; font-family: inherit;
+        }
+        button:hover, select:hover { background: var(--yellow); }
+        button:disabled { opacity: .5; cursor: default; }
+        #install-btn { display: none; }
+        .status { font-size: 0.75rem; color: #575; margin-top: 10px; min-height: 1em; }
+        footer { margin-top: 34px; font-size: 0.85rem; color: #555; }
+        footer a { color: var(--green); }
+        @media (max-width: 480px) {
+            .countdown { font-size: 2.4rem; }
+            h1 { font-size: 1.3rem; }
+            .price { font-size: 1.8rem; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            canvas#matrix { display: none; }
+        }
     </style>
 </head>
 <body>
-    <canvas id="matrix"></canvas>
+    <canvas id="matrix" aria-hidden="true"></canvas>
     <div class="container">
-        <!-- Bitcoin Price Widget - Moved to top -->
         <div class="price">
-            ₿ <span id="btc-price">Loading...</span> 
-            <select id="currency" onchange="fetchPrice(this.value)">
+            ₿ <span id="btc-price">Loading…</span>
+            <select id="currency" aria-label="Currency">
                 <option value="USD">USD</option>
                 <option value="EUR">EUR</option>
                 <option value="GBP">GBP</option>
@@ -39,31 +79,51 @@
             </select>
         </div>
 
-        <h1>🚀 BIP-110 ACTIVATION COUNTDOWN</h1>
-        
-        <div class="bitcoin">Current Block Height</div>
-        <div id="current-block" class="countdown">Loading...</div>
-        
-        <div class="info">Mandatory Signaling Starts @ Block 961,632</div>
-        <div id="blocks-left" class="countdown">--- blocks left</div>
-        <div id="time-left" class="countdown">---</div>
-        
-        <div class="info">Current Signaling: <strong id="signaling">0%</strong></div>
-        
-        <div class="quote" id="satoshi-quote">"Loading wisdom..."</div>
-        
-        <button onclick="refreshData()">Refresh All</button>
-        <button onclick="shareCountdown()">Share on X</button>
-        <button onclick="installPWA()">Install PWA</button>
+        <h1>🚀 BIP-110 MANDATORY SIGNALING</h1>
+
+        <div class="label">Current Block Height</div>
+        <div id="current-block" class="countdown small">Loading…</div>
+
+        <div class="label">Blocks Until Block 961,632</div>
+        <div id="blocks-left" class="countdown">—</div>
+        <div id="time-left" class="info">~— (est. at 10 min/block)</div>
+
+        <div class="sig-wrap">
+            <div class="label" style="margin-bottom:6px">Miner Signaling (bit 4)</div>
+            <div class="sig-bar">
+                <div id="sig-fill" class="sig-fill"></div>
+                <div class="sig-threshold" title="55% activation threshold"></div>
+            </div>
+            <div class="sig-legend">
+                <strong id="signaling">—</strong> of recent blocks ·
+                <span style="color:var(--yellow)">55%</span> needed to activate
+            </div>
+        </div>
+
+        <div class="quote" id="satoshi-quote">"Loading wisdom…"</div>
+
+        <div class="btns">
+            <button id="refresh-btn" onclick="refreshData()">Refresh</button>
+            <button onclick="shareCountdown()">Share on X</button>
+            <button id="install-btn" onclick="installPWA()">Install App</button>
+        </div>
+        <div class="status" id="status"></div>
 
         <footer>
-            Bitcoin is Money • <a href="https://pricingbitcoin.com" style="color:#0f0">pricingbitcoin.com</a>
+            Bitcoin is Money • <a href="https://pricingbitcoin.com">pricingbitcoin.com</a><br>
+            <span style="font-size:.8rem">Data: mempool.space · blockchain.info · CoinGecko</span>
         </footer>
     </div>
 
     <script>
-        let currentHeight = 956117;
-        const targetHeight = 961632;
+        // ---- BIP-110 constants (see bip110.org / bitcoin/bips#110) ----
+        const TARGET_HEIGHT = 961632;   // mandatory signaling begins
+        const ACTIVATION_THRESHOLD = 55; // % of blocks in a retarget period
+        const SIGNAL_BIT = 4;            // version bit BIP-110 uses
+        const SIGNAL_SAMPLE = 45;        // recent blocks we sample for signaling %
+
+        let currentHeight = null;
+
         const quotes = [
             "The root problem with conventional currency is all the trust that's required to make it work.",
             "We have to find a way to make the network work without trusting anyone.",
@@ -73,93 +133,188 @@
             "The Times 03/Jan/2009 Chancellor on brink of second bailout for banks."
         ];
 
-        const canvas = document.getElementById('matrix');
-        const ctx = canvas.getContext('2d');
-        function resizeCanvas() { canvas.height = window.innerHeight; canvas.width = window.innerWidth; }
-        resizeCanvas();
-        const chars = "01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワン";
-        let drops = Array(Math.floor(canvas.width / 14)).fill(1);
+        const $ = id => document.getElementById(id);
+        const setStatus = msg => { $('status').textContent = msg; };
 
+        // ---------------- Matrix rain ----------------
+        const canvas = $('matrix');
+        const ctx = canvas.getContext('2d');
+        const chars = "01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワン";
+        let drops = [];
+        function resizeCanvas() {
+            canvas.height = window.innerHeight;
+            canvas.width = window.innerWidth;
+            drops = Array(Math.floor(canvas.width / 14)).fill(1);
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         function drawMatrix() {
             ctx.fillStyle = 'rgba(0,0,0,0.05)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = '#0f0';
-            ctx.font = `14px monospace`;
+            ctx.font = '14px monospace';
             for (let i = 0; i < drops.length; i++) {
-                const text = chars[Math.floor(Math.random()*chars.length)];
-                ctx.fillText(text, i*14, drops[i]*14);
-                if (drops[i]*14 > canvas.height && Math.random() > 0.975) drops[i] = 0;
+                const text = chars[Math.floor(Math.random() * chars.length)];
+                ctx.fillText(text, i * 14, drops[i] * 14);
+                if (drops[i] * 14 > canvas.height && Math.random() > 0.975) drops[i] = 0;
                 drops[i]++;
             }
         }
-        setInterval(drawMatrix, 35);
-        window.addEventListener('resize', resizeCanvas);
+        if (!reduceMotion) setInterval(drawMatrix, 35);
 
+        // ---------------- Bitcoin price ----------------
         async function fetchPrice(currency = 'USD') {
+            const cur = currency.toLowerCase();
             try {
-                const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=${currency.toLowerCase()}`);
+                const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=${cur}`);
+                if (!res.ok) throw new Error('http ' + res.status);
                 const data = await res.json();
-                document.getElementById('btc-price').textContent = Number(data.bitcoin[currency.toLowerCase()]).toLocaleString();
-            } catch(e) {
-                document.getElementById('btc-price').textContent = '—';
+                const val = data?.bitcoin?.[cur];
+                if (val == null) throw new Error('no data');
+                $('btc-price').textContent = Number(val).toLocaleString(undefined, { maximumFractionDigits: 0 });
+            } catch (e) {
+                $('btc-price').textContent = '—';
             }
         }
 
-        async function fetchData() {
+        // ---------------- Block height ----------------
+        async function fetchBlockHeight() {
+            // primary: mempool.space (CORS-friendly, plain integer)
             try {
-                const res = await fetch('https://blockchain.info/q/getblockcount');
-                if (res.ok) currentHeight = parseInt(await res.text());
-            } catch(e){}
-            
+                const res = await fetch('https://mempool.space/api/blocks/tip/height');
+                if (res.ok) return parseInt(await res.text(), 10);
+            } catch (e) {}
+            // fallback: blockchain.info
             try {
-                const sigRes = await fetch('https://bip110.org/monitor');
-                if (sigRes.ok) {
-                    const text = await sigRes.text();
-                    const match = text.match(/(\d+\.?\d*)%/);
-                    if (match) document.getElementById('signaling').textContent = match[1] + '%';
-                }
-            } catch(e){ document.getElementById('signaling').textContent = '~0.5%'; }
+                const res = await fetch('https://blockchain.info/q/getblockcount?cors=true');
+                if (res.ok) return parseInt(await res.text(), 10);
+            } catch (e) {}
+            return null;
+        }
 
+        // ---------------- Real signaling from recent blocks ----------------
+        // A block signals BIP-110 if it uses version-bits format (top bits 001)
+        // and has bit 4 set.
+        function signalsBit(version) {
+            return (version & 0xE0000000) === 0x20000000 && (version & (1 << SIGNAL_BIT)) !== 0;
+        }
+        async function fetchSignaling(tipHeight) {
+            try {
+                let blocks = [];
+                let fromHeight = tipHeight;
+                // mempool.space returns 15 blocks per page, descending from :height
+                while (blocks.length < SIGNAL_SAMPLE && fromHeight != null) {
+                    const url = 'https://mempool.space/api/v1/blocks/' + fromHeight;
+                    const res = await fetch(url);
+                    if (!res.ok) break;
+                    const page = await res.json();
+                    if (!page.length) break;
+                    blocks = blocks.concat(page);
+                    fromHeight = page[page.length - 1].height - 1;
+                }
+                if (!blocks.length) return null;
+                blocks = blocks.slice(0, SIGNAL_SAMPLE);
+                const signaling = blocks.filter(b => signalsBit(b.version)).length;
+                return { pct: (signaling / blocks.length) * 100, sample: blocks.length, count: signaling };
+            } catch (e) {
+                return null;
+            }
+        }
+
+        // ---------------- Orchestration ----------------
+        async function fetchData() {
+            setStatus('Fetching chain data…');
+            const height = await fetchBlockHeight();
+            if (height != null && !Number.isNaN(height)) currentHeight = height;
             updateDisplay();
+
+            if (currentHeight != null) {
+                const sig = await fetchSignaling(currentHeight);
+                if (sig) {
+                    $('signaling').textContent = sig.pct.toFixed(2) + '%';
+                    $('sig-fill').style.width = Math.min(100, sig.pct) + '%';
+                    setStatus(`Signaling from last ${sig.sample} blocks (${sig.count} signaling) · updated ${timeNow()}`);
+                } else {
+                    $('signaling').textContent = 'unavailable';
+                    setStatus('Signaling data unavailable · block height updated ' + timeNow());
+                }
+            }
             rotateQuote();
         }
 
+        function timeNow() {
+            return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+
         function updateDisplay() {
-            const blocksLeft = Math.max(0, targetHeight - currentHeight);
-            document.getElementById('current-block').textContent = currentHeight.toLocaleString();
-            document.getElementById('blocks-left').textContent = `${blocksLeft.toLocaleString()} blocks left`;
+            if (currentHeight == null) {
+                $('current-block').textContent = 'unavailable';
+                return;
+            }
+            $('current-block').textContent = currentHeight.toLocaleString();
+            const blocksLeft = Math.max(0, TARGET_HEIGHT - currentHeight);
+            if (blocksLeft === 0) {
+                $('blocks-left').textContent = 'REACHED';
+                $('time-left').textContent = 'Block 961,632 reached';
+                return;
+            }
+            $('blocks-left').textContent = blocksLeft.toLocaleString();
             const minutesLeft = blocksLeft * 10;
             const days = Math.floor(minutesLeft / 1440);
             const hours = Math.floor((minutesLeft % 1440) / 60);
-            const mins = minutesLeft % 60;
-            document.getElementById('time-left').textContent = `${days}d ${hours}h ${mins}m`;
+            const mins = Math.floor(minutesLeft % 60);
+            $('time-left').textContent = `~${days}d ${hours}h ${mins}m (est. at 10 min/block)`;
         }
 
         function rotateQuote() {
-            document.getElementById('satoshi-quote').textContent = `"${quotes[Math.floor(Math.random() * quotes.length)]}"`;
+            $('satoshi-quote').textContent = `"${quotes[Math.floor(Math.random() * quotes.length)]}"`;
         }
 
-        function refreshData() {
-            fetchData();
-            fetchPrice(document.getElementById('currency').value);
+        async function refreshData() {
+            const btn = $('refresh-btn');
+            btn.disabled = true;
+            await Promise.all([fetchData(), fetchPrice($('currency').value)]);
+            btn.disabled = false;
         }
 
         function shareCountdown() {
-            const blocksLeft = Math.max(0, targetHeight - currentHeight);
-            const text = `🚀 ${blocksLeft} blocks until BIP-110 mandatory signaling! Bitcoin stays money. https://pricingbitcoin.com`;
-            window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
+            const blocksLeft = currentHeight != null ? Math.max(0, TARGET_HEIGHT - currentHeight) : '—';
+            const text = `🚀 ${blocksLeft} blocks until BIP-110 mandatory signaling. Bitcoin is money. https://pricingbitcoin.com`;
+            window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
         }
 
-        function installPWA() {
-            alert('Add to Home Screen from browser menu for full PWA!');
+        // ---------------- PWA install ----------------
+        let deferredPrompt = null;
+        window.addEventListener('beforeinstallprompt', e => {
+            e.preventDefault();
+            deferredPrompt = e;
+            $('install-btn').style.display = 'inline-block';
+        });
+        async function installPWA() {
+            if (!deferredPrompt) {
+                alert('Use your browser menu → "Add to Home Screen" / "Install".');
+                return;
+            }
+            deferredPrompt.prompt();
+            await deferredPrompt.userChoice;
+            deferredPrompt = null;
+            $('install-btn').style.display = 'none';
+        }
+        window.addEventListener('appinstalled', () => { $('install-btn').style.display = 'none'; });
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
         }
 
-        window.onload = () => {
+        // ---------------- Boot ----------------
+        $('currency').addEventListener('change', e => fetchPrice(e.target.value));
+        window.addEventListener('load', () => {
             fetchData();
             fetchPrice('USD');
-            setInterval(() => { fetchData(); fetchPrice(document.getElementById('currency').value); }, 180000);
-            setInterval(() => { if (Math.random() > 0.6) { currentHeight++; updateDisplay(); } }, 45000);
-        };
+            // real polling — no faked increments
+            setInterval(() => { fetchData(); fetchPrice($('currency').value); }, 120000);
+        });
     </script>
 </body>
 </html>

@@ -1,14 +1,16 @@
 {
-  "name": "BIP110 Countdown",
+  "name": "BIP-110 Countdown",
   "short_name": "BIP110",
-  "description": "Countdown to Bitcoin BIP-110 activation",
-  "start_url": "/index.html",
+  "description": "Live countdown to Bitcoin BIP-110 mandatory signaling, with real block height and miner signaling.",
+  "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#000000",
   "theme_color": "#00ff00",
   "icons": [
-    { "src": "https://via.placeholder.com/192x192/000/0f0?text=BIP", "sizes": "192x192", "type": "image/png" },
-    { "src": "https://via.placeholder.com/512x512/000/0f0?text=BIP", "sizes": "512x512", "type": "image/png" }
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }
-
